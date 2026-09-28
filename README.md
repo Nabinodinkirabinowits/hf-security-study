@@ -28,10 +28,16 @@ hf-security-study/
 
 ## Primeros Pasos
 
-### 1. Preparar el entorno virtual
+### 1. Clonar el repositorio
+```bash
+git clone https://github.com/Nabinodinkirabinowits/hf-security-study.git
+cd hf-security-study
+```
+
+### 2. Preparar el entorno virtual
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate    # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
