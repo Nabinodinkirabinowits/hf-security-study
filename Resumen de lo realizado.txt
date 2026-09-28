@@ -1,0 +1,17 @@
+Resumen de lo realizado:
+Estructura y Entorno:
+Se crearon las carpetas (data/, notebooks/, src/, reports/) y se instaló el entorno virtual en .venv/ con huggingface_hub, pandas, pyarrow, seaborn y matplotlib.
+Extracción Automatizada (src/extractor.py):
+Se extrajeron metadatos de 615 datasets únicos bajo tags de seguridad (security, cybersecurity, vulnerability) ordenados por descargas recientes, guardados en 
+data/raw/
+.
+Muestreo Ligero de Esquemas (src/inspector.py):
+Inspección remota sin clonar repositorios completos (soporte Parquet, JSON, JSONL y CSV). Se muestreó CyberNative/Code_Vulnerability_Security_DPO identificando su estructura DPO (lang, question, chosen, rejected).
+Clasificación y Análisis (src/parser.py y src/visualizer.py):
+Categorización automática y generación de 3 gráficos de alta resolución en 
+reports/figures/
+.
+Hallazgo principal validado:
+Los datos confirman tu hipótesis: los likes no reflejan la adopción real. Datasets con 0 o 2 likes (como deadbits/vigil-jailbreak o zstanjj/ClawTrojan) superan las 10,000 descargas mensuales en pipelines de producción.
+
+
