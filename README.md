@@ -18,7 +18,9 @@ hf-security-study/
 │   ├── __init__.py
 │   ├── extractor.py         # Extracción modular de metadatos vía HfApi
 │   ├── inspector.py         # Muestreo ligero de esquemas sin clonar repos
-│   └── parser.py            # Categorización por casos de uso
+│   ├── parser.py            # Categorización por casos de uso
+│   ├── visualizer.py        # Generación de gráficos y figuras para reportes
+│   └── downloader.py        # Gestor de descarga y verificación del Top 10 curado
 ├── reports/
 │   └── figures/             # Gráficos y visualizaciones generadas
 ├── requirements.txt         # Dependencias Python
@@ -41,16 +43,32 @@ source .venv/bin/activate    # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Extraer metadatos de Hugging Face
+### 3. Extraer metadatos de Hugging Face
 ```bash
 python3 -m src.extractor
 ```
 Esto generará los archivos `data/raw/security_datasets_metadata.csv` y `data/raw/security_datasets_metadata.json`.
 
-### 3. Clasificar y generar gráficos
+### 4. Clasificar y generar gráficos
 ```bash
 python3 -m src.parser
 python3 -m src.visualizer
+```
+
+### 5. Descargar los Top 10 Datasets Curados
+El módulo `src/downloader.py` permite gestionar y descargar los 10 datasets imprescindibles de Ciberseguridad e IA:
+```bash
+# Ver información, tamaños y estado de descargas
+python3 -m src.downloader --info
+
+# Descargar los 9 datasets ligeros (< 1 GB cada uno, ~1.5 GB en total)
+python3 -m src.downloader --skip-large
+
+# Descargar todos los 10 datasets completos (~12 GB total)
+python3 -m src.downloader --all
+
+# Descargar un dataset individual por número de ranking (ej. #1)
+python3 -m src.downloader --index 1
 ```
 
 ---
