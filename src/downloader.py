@@ -117,6 +117,39 @@ TOP_10_DATASETS: List[Dict[str, Any]] = [
     }
 ]
 
+# Definition of Complementary Datasets for Specialized Roles (Real Network Traffic & Autonomous Agents)
+COMPLEMENTARY_DATASETS: List[Dict[str, Any]] = [
+    {
+        "rank": 11,
+        "id": "c01dsnap/CIC-IDS2017",
+        "folder_name": "11_c01dsnap__CIC-IDS2017",
+        "category": "Tráfico de Red Real / IDS (Nivel 1)",
+        "estimated_mb": 843.7,
+        "description": "Benchmark internacional de tráfico de red real capturado con ataques DoS, PortScan, Infiltración y Web Attacks para detección tabular (XGBoost/Isolation Forest).",
+        "key_features": ["Tráfico de red real", "Desbalance realista de clases", "Estándar de oro IDS"]
+    },
+    {
+        "rank": 12,
+        "id": "walledai/CyberSecEval",
+        "folder_name": "12_walledai__CyberSecEval",
+        "category": "Evaluación de Agentes y Explotación (Nivel 5)",
+        "estimated_mb": 2.3,
+        "description": "Benchmark de Meta y WalledAI para evaluar capacidades de explotación, generación de código inseguro y evasión en modelos y agentes de IA.",
+        "key_features": ["Pruebas de explotación", "Evaluación de agentes", "8 lenguajes de programación"]
+    },
+    {
+        "rank": 13,
+        "id": "jordan-taylor-aisi/normal_llama_31_8b_instruct_gdm_intercode_ctf",
+        "folder_name": "13_aisi_gdm__intercode-ctf",
+        "category": "Trazas Autónomas de Terminal CTF (Nivel 5)",
+        "estimated_mb": 2.6,
+        "description": "Evaluaciones y trazas agénticas de Google DeepMind y UK AI Safety Institute (AISI) para resolución autónoma de CTF con herramientas bash y python.",
+        "key_features": ["Trazas paso a paso en bash", "Tool calling (Bash, Python, Submit)", "Google DeepMind & AISI"]
+    }
+]
+
+ALL_DATASETS: List[Dict[str, Any]] = TOP_10_DATASETS + COMPLEMENTARY_DATASETS
+
 
 class HFSecurityDownloader:
     """Manages downloading, verifying, and tracking the Top 10 security datasets."""
@@ -179,17 +212,31 @@ class HFSecurityDownloader:
         }
 
     def list_datasets_info(self):
-        """Prints a well-formatted summary table of the Top 10 datasets and status."""
+        """Prints a well-formatted summary table of all curated and complementary datasets."""
         free_gb = self.get_free_disk_space_gb()
         print("\n" + "=" * 95)
-        print(" TOP 10 DATASETS DE CIBERSEGURIDAD E IA (HUGGING FACE)")
+        print(" DATASETS DE CIBERSEGURIDAD E IA (HUGGING FACE)")
         print(f" Espacio libre en disco: {free_gb:.1f} GB | Directorio: {self.target_dir}")
         print("=" * 95)
 
         total_est_mb = 0
         total_local_mb = 0
 
+        print("\n--- CORE TOP 10 DATASETS ---")
         for item in TOP_10_DATASETS:
+            status_info = self.check_dataset_status(item["id"], item["folder_name"])
+            status_str = f" DESCARGADO ({status_info['size_mb']} MB, {status_info['file_count']} archivos)" if status_info["is_downloaded"] else "[PENDIENTE]"
+            total_est_mb += item["estimated_mb"]
+            total_local_mb += status_info["size_mb"]
+
+            print(f"\n[#{item['rank']}] {item['id']}")
+            print(f"     Categoría:  {item['category']}")
+            print(f"     Tamaño Est: {item['estimated_mb']:.1f} MB | Estado: {status_str}")
+            print(f"     Detalles:   {item['description']}")
+            print(f"     Destacados: {', '.join(item['key_features'])}")
+
+        print("\n--- DATASETS COMPLEMENTARIOS (RED REAL & AGENTES AUTÓNOMOS) ---")
+        for item in COMPLEMENTARY_DATASETS:
             status_info = self.check_dataset_status(item["id"], item["folder_name"])
             status_str = f" DESCARGADO ({status_info['size_mb']} MB, {status_info['file_count']} archivos)" if status_info["is_downloaded"] else "[PENDIENTE]"
             total_est_mb += item["estimated_mb"]
@@ -210,7 +257,7 @@ class HFSecurityDownloader:
         Downloads a single dataset using snapshot_download with verification.
         
         Args:
-            item: Dataset dictionary definition from TOP_10_DATASETS.
+            item: Dataset dictionary definition from ALL_DATASETS.
             force: If True, re-downloads even if already present.
         """
         repo_id = item["id"]
@@ -266,22 +313,24 @@ class HFSecurityDownloader:
             logger.error(f"Error descargando {repo_id}: {e}")
             return False
 
-    def download_all(self, skip_large: bool = False, force: bool = False):
+    def download_all(self, target_datasets: Optional[List[Dict[str, Any]]] = None, skip_large: bool = False, force: bool = False):
         """
-        Downloads all curated datasets.
+        Downloads all specified datasets (defaults to ALL_DATASETS).
         
         Args:
+            target_datasets: List of dataset dicts to download. Defaults to ALL_DATASETS.
             skip_large: If True, skips datasets larger than 1 GB (e.g. NIST).
             force: If True, overwrites existing downloads.
         """
+        dataset_list = target_datasets or ALL_DATASETS
         free_gb = self.get_free_disk_space_gb()
-        logger.info(f"Iniciando descarga en lote. Espacio libre en disco: {free_gb:.1f} GB.")
+        logger.info(f"Iniciando descarga en lote ({len(dataset_list)} datasets). Espacio libre en disco: {free_gb:.1f} GB.")
         
         successes = 0
         skipped = 0
         failures = 0
 
-        for item in TOP_10_DATASETS:
+        for item in dataset_list:
             if skip_large and item["estimated_mb"] > 1024:
                 logger.info(f"[#{item['rank']}] Omitiendo {item['id']} por exceder 1 GB (--skip-large activo).")
                 skipped += 1
@@ -298,11 +347,13 @@ class HFSecurityDownloader:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Gestor de descarga para los Top 10 datasets de Ciberseguridad e IA.")
+    parser = argparse.ArgumentParser(description="Gestor de descarga para datasets de Ciberseguridad e IA.")
     parser.add_argument("--info", "--list", action="store_true", help="Muestra la lista de datasets, tamaños y estado actual.")
-    parser.add_argument("--all", action="store_true", help="Descarga todos los datasets del Top 10.")
+    parser.add_argument("--all", action="store_true", help="Descarga todos los datasets (Top 10 + complementarios).")
+    parser.add_argument("--top10", action="store_true", help="Descarga únicamente los datasets del Top 10 original.")
+    parser.add_argument("--complementary", action="store_true", help="Descarga únicamente los datasets complementarios (#11, #12, #13).")
     parser.add_argument("--skip-large", action="store_true", help="Omite datasets mayores a 1 GB (útil para descargar primero los más ligeros).")
-    parser.add_argument("--index", type=int, choices=range(1, 11), help="Descarga un dataset específico por su número de ranking (1 al 10).")
+    parser.add_argument("--index", type=int, choices=range(1, 14), help="Descarga un dataset específico por su número de ranking (1 al 13).")
     parser.add_argument("--force", action="store_true", help="Fuerza la descarga incluso si el dataset ya existe localmente.")
 
     args = parser.parse_args()
@@ -312,19 +363,24 @@ def main():
     if args.info or len(sys.argv) == 1:
         downloader.list_datasets_info()
         print("Para descargar:")
-        print("  python3 -m src.downloader --all            # Descargar los 10 completos")
-        print("  python3 -m src.downloader --skip-large     # Descargar los 9 ligeros (< 1 GB, ~1.5 GB total)")
-        print("  python3 -m src.downloader --index 1        # Descargar sólo el #1")
+        print("  python -m src.downloader --all            # Descargar todos (Top 10 + Complementarios)")
+        print("  python -m src.downloader --top10          # Descargar los 10 originales")
+        print("  python -m src.downloader --complementary  # Descargar los 3 complementarios (#11, #12, #13)")
+        print("  python -m src.downloader --index 11       # Descargar sólo el #11")
         return
 
     if args.index:
-        target_item = next((item for item in TOP_10_DATASETS if item["rank"] == args.index), None)
+        target_item = next((item for item in ALL_DATASETS if item["rank"] == args.index), None)
         if target_item:
             downloader.download_dataset(target_item, force=args.force)
         else:
             logger.error(f"Ranking {args.index} no encontrado.")
+    elif args.complementary:
+        downloader.download_all(target_datasets=COMPLEMENTARY_DATASETS, skip_large=args.skip_large, force=args.force)
+    elif args.top10:
+        downloader.download_all(target_datasets=TOP_10_DATASETS, skip_large=args.skip_large, force=args.force)
     elif args.all or args.skip_large:
-        downloader.download_all(skip_large=args.skip_large, force=args.force)
+        downloader.download_all(target_datasets=ALL_DATASETS, skip_large=args.skip_large, force=args.force)
 
 
 if __name__ == "__main__":
